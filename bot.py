@@ -6,10 +6,12 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import openai
 import os
+import tempfile
 from dotenv import load_dotenv
 
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 SCOPE = [
     "https://spreadsheets.google.com/feeds",
@@ -18,7 +20,13 @@ SCOPE = [
 ]
 
 # Authenticate Google Sheets
-creds = ServiceAccountCredentials.from_json_keyfile_name("google_creds.json", SCOPE)
+creds_json_str = st.secrets["google_service_account"]["creds_json"]
+
+with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as f:
+    f.write(creds_json_str)
+    creds_path = f.name
+
+creds = ServiceAccountCredentials.from_json_keyfile_name(creds_path, SCOPE)
 client = gspread.authorize(creds)
 sheet = client.open("Fridge Inventory").sheet1
 
